@@ -74,14 +74,18 @@ const isMirror = () => (DEMO ? Q.has('mirror') : S.facing === 'user');
 
 // ───────────────────────────────────────────── screens
 function showScreen(name) { document.body.dataset.screen = name; }
-function loading(on, text) { $('loading').hidden = !on; if (text) $('loadingText').textContent = text; }
+function syncOverlay() { document.body.classList.toggle('overlay-up', !$('loading').hidden || !$('error').hidden); }
+function loading(on, text) { $('loading').hidden = !on; if (text) $('loadingText').textContent = text; syncOverlay(); }
+const STANDALONE = matchMedia('(display-mode: standalone)').matches;
 function showError(e) {
   loading(false);
   const n = e?.name;
   let title = 'Uh-oh!', text;
   if (n === 'NotAllowedError' || n === 'SecurityError') {
     title = 'The camera is turned off';
-    text = 'Ask a grown-up: tap the 🔒 next to the web address, turn Camera on, then tap Try again.';
+    text = STANDALONE
+      ? 'Ask a grown-up: open Settings → Apps → Chrome → Permissions → Camera → Allow, then tap Try again.'
+      : 'Ask a grown-up: tap the 🔒 next to the web address, turn Camera on, then tap Try again.';
   } else if (n === 'NotFoundError' || n === 'OverconstrainedError') {
     text = "This device doesn't have that camera. Tap Home and pick the other one.";
   } else if (n === 'NotReadableError' || n === 'AbortError') {
@@ -96,12 +100,15 @@ function showError(e) {
   $('errTitle').textContent = title;
   $('errText').textContent = text;
   $('error').hidden = false;
+  syncOverlay();
+  sfx.off();
   console.error(e);
 }
 
-async function openStudio(facing) {
+async function openStudio(facing, push = false) {
   sfx.unlock(); sfx.pop();
   S.facing = facing;
+  if (push && document.body.dataset.screen !== 'studio') openLayer('studio');
   showScreen('studio');
   $('error').hidden = true;
   loading(true, 'Opening the studio…');
@@ -119,7 +126,7 @@ async function openStudio(facing) {
 function goHome() {
   S.gen++;
   stopSource();
-  loading(false); $('error').hidden = true; setHint('');
+  $('error').hidden = true; loading(false); setHint('');
   showScreen('start');
   sfx.pop();
 }
@@ -280,7 +287,9 @@ function clearAll() {
 // ───────────────────────────────────────────── camera button
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function shoot() {
-  if (S.busy || document.body.dataset.screen !== 'studio' || !$('loading').hidden || !$('error').hidden) return;
+  if (S.busy || document.body.dataset.screen !== 'studio') return;
+  if (!$('loading').hidden) { sfx.off(); toast('Wait for the camera! ⏳'); return; }
+  if (!$('error').hidden) { sfx.off(); toast('Fix the camera first! 👆🏾'); return; }
   S.busy = true; $('shutter').disabled = true;
   try {
     if (isMirror()) {                              // selfie: 3-2-1 so she can pose
@@ -354,6 +363,11 @@ function setThumb(blob) {
 let gridUrls = [], viewing = null;
 async function openGallery() {
   sfx.pop();
+  openLayer('gallery');
+  await renderGallery();
+  $('gallery').hidden = false;
+}
+async function renderGallery() {
   let rows = [];
   try { rows = await gallery.all(); } catch (e) { console.error(e); }
   gridUrls.forEach(URL.revokeObjectURL);
@@ -363,11 +377,10 @@ async function openGallery() {
     const b = e.target.closest('button'); if (!b) return;
     const i = +b.dataset.i; viewing = { row: rows[i], url: gridUrls[i] };
     $('viewerImg').src = viewing.url; $('viewer').hidden = false; sfx.pop();
+    openLayer('viewer');
   };
   $('empty').hidden = rows.length > 0;
-  $('gallery').hidden = false;
 }
-function closeGallery() { $('gallery').hidden = true; sfx.pop(); }
 async function share() {
   if (!viewing) return;
   const file = new File([viewing.row.blob], `tori-glam-${viewing.row.id}.jpg`, { type: 'image/jpeg' });
@@ -385,12 +398,38 @@ async function share() {
 async function trash() {
   if (!viewing) return;
   await gallery.remove(viewing.row.id);
-  $('confirm').hidden = true; $('viewer').hidden = true; viewing = null;
+  viewing = null;
+  closeLayers(['confirm', 'viewer'], true);
   sfx.swoosh(); toast('Thrown away! 🗑️');
   const last = await gallery.latest().catch(() => null);
   setThumb(last?.blob || null);
-  openGallery();
+  renderGallery();
 }
+
+// ───────────────────────────────────────────── layers + Android Back
+// Every screen that opens on top pushes a history entry, so the Back gesture closes it instead of leaving the app.
+const layers = [];
+function openLayer(name) { layers.push(name); history.pushState({ d: layers.length }, ''); }
+function hideLayer(name, quiet) {
+  if (name === 'studio') { goHome(); return; }
+  if (name === 'gallery') $('gallery').hidden = true;
+  if (name === 'viewer') $('viewer').hidden = true;
+  if (name === 'confirm') $('confirm').hidden = true;
+  if (!quiet) sfx.pop();
+}
+function closeTop() { if (layers.length) history.back(); }
+// Close named top layers now (no waiting on popstate), then rewind history to match.
+function closeLayers(names, quiet) {
+  let n = 0;
+  for (const name of names) if (layers[layers.length - 1] === name) { hideLayer(layers.pop(), quiet); n++; }
+  if (n) { skipPops += 1; history.go(-n); }
+}
+let skipPops = 0;
+addEventListener('popstate', (e) => {
+  if (skipPops) { skipPops--; return; }
+  const target = e.state?.d ?? 0;
+  while (layers.length > target) hideLayer(layers.pop());
+});
 
 // ───────────────────────────────────────────── toast
 let toastTimer = 0;
@@ -402,20 +441,20 @@ function toast(text) {
 }
 
 // ───────────────────────────────────────────── wire up
-$('meBtn').onclick = () => openStudio('user');
-$('themBtn').onclick = () => openStudio('environment');
+$('meBtn').onclick = () => openStudio('user', true);
+$('themBtn').onclick = () => openStudio('environment', true);
 $('startGallery').onclick = () => { sfx.unlock(); openGallery(); };
-$('homeBtn').onclick = goHome;
+$('homeBtn').onclick = () => (layers.includes('studio') ? closeTop() : goHome());
 $('flipBtn').onclick = () => openStudio(S.facing === 'user' ? 'environment' : 'user');
 $('retryBtn').onclick = () => openStudio(S.facing);
 $('shutter').onclick = shoot;
 $('clearBtn').onclick = clearAll;
 $('galleryBtn').onclick = openGallery;
-$('galleryClose').onclick = closeGallery;
-$('viewerBack').onclick = () => { $('viewer').hidden = true; sfx.pop(); };
+$('galleryClose').onclick = closeTop;
+$('viewerBack').onclick = closeTop;
 $('shareBtn').onclick = share;
-$('trashBtn').onclick = () => { $('confirm').hidden = false; sfx.pop(); };
-$('keepBtn').onclick = () => { $('confirm').hidden = true; sfx.pop(); };
+$('trashBtn').onclick = () => { $('confirm').hidden = false; sfx.pop(); openLayer('confirm'); };
+$('keepBtn').onclick = closeTop;
 $('tossBtn').onclick = trash;
 $('tray').onclick = (e) => { const b = e.target.closest('.tile'); if (b) toggle(b.dataset.id); };
 $('swatches').onclick = (e) => { const b = e.target.closest('.swatch'); if (b) pickColor(+b.dataset.i); };
@@ -426,7 +465,7 @@ document.querySelectorAll('.tab').forEach((b) => {
 renderTabs();
 renderTray();
 gallery.latest().then((r) => r && setThumb(r.blob)).catch(() => {});
-if (Q.has('go')) openStudio('user');            // dev shortcut: ?demo&go skips the start screen
+if (Q.has('go')) openStudio('user', true);            // dev shortcut: ?demo&go skips the start screen
 
 // Offline support once hosted (not on localhost, where it would cache stale dev files).
 if ('serviceWorker' in navigator && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {

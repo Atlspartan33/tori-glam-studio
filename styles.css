@@ -34,8 +34,9 @@ body[data-screen="studio"] #studio { display: flex; }
 
 /* ───────────── start ───────────── */
 .start {
-  flex-direction: column; justify-content: center; align-items: flex-start;
+  flex-direction: column; justify-content: safe center; align-items: flex-start;
   padding: max(32px, env(safe-area-inset-top)) 8vw 40px;
+  overflow-y: auto;
   background:
     radial-gradient(120% 70% at 100% 0%, rgba(255, 79, 163, .35), transparent 60%),
     radial-gradient(90% 60% at 0% 100%, rgba(255, 201, 51, .18), transparent 60%),
@@ -46,7 +47,7 @@ body[data-screen="studio"] #studio { display: flex; }
 .kicker { margin: 0; font-size: clamp(28px, 6vw, 48px); font-weight: 700; color: var(--gold); letter-spacing: .02em; transform: rotate(-4deg); transform-origin: left; }
 .title {
   margin: 0 0 12px; font-weight: 700; line-height: .86; letter-spacing: -.02em;
-  font-size: clamp(88px, 21vw, 190px); text-transform: uppercase; color: var(--pink);
+  font-size: clamp(64px, min(21vw, 22vh), 190px); text-transform: uppercase; color: var(--pink);
   text-shadow: 0 6px 0 var(--pink-deep), 0 14px 40px rgba(255, 79, 163, .35);
 }
 .ask { margin: 18px 0 22px; font-size: clamp(22px, 4vw, 32px); color: var(--ink); }
@@ -78,7 +79,7 @@ body[data-screen="studio"] #studio { display: flex; }
 #canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .topbar {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 6;   /* above loading/error so Home always works */
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: max(12px, env(safe-area-inset-top)) 14px 12px;
   background: linear-gradient(rgba(23, 18, 29, .75), transparent);
@@ -129,12 +130,14 @@ body[data-screen="studio"] #studio { display: flex; }
   background: var(--panel);
   border-top: 3px solid var(--pink);
 }
+body.overlay-up .dock { opacity: .4; }
+body.overlay-up .dock .tray, body.overlay-up .dock .tabs, body.overlay-up .dock .colors { pointer-events: none; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .tab {
   min-height: 56px; border-radius: 999px; font-size: 22px; font-weight: 700;
   background: var(--panel-2); color: var(--ink);
 }
-.tab[aria-selected="true"] { background: var(--pink); color: var(--dark-on-pink); }
+.tab[aria-selected="true"] { background: #3A2447; color: var(--ink); box-shadow: inset 0 0 0 4px var(--pink); }
 
 .tray { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; }
 .tile {
@@ -217,12 +220,37 @@ body[data-screen="studio"] #studio { display: flex; }
 @keyframes toastIn { from { translate: -50% -20px; opacity: 0; } }
 
 /* ───────────── landscape tablet: dock becomes a side panel ───────────── */
-@media (orientation: landscape) and (min-width: 900px) {
+@media (orientation: landscape) and (min-width: 600px) {
   .studio { flex-direction: row; }
   .dock { width: 400px; border-top: 0; border-left: 3px solid var(--pink); overflow-y: auto; justify-content: flex-start; padding-top: max(16px, env(safe-area-inset-top)); }
   .tray { grid-template-columns: repeat(2, 1fr); }
   .shutter-row { margin-top: auto; }
+  .start-actions .big { flex: 1; }
   .start-actions { flex-direction: row; max-width: none; }
+}
+
+/* short landscape (8" tablets sideways, phones sideways): compact side panel */
+@media (orientation: landscape) and (min-width: 600px) and (max-height: 640px) {
+  .dock { width: 340px; gap: 8px; padding: 10px 12px; }
+  .tab { min-height: 48px; font-size: 18px; }
+  .tray { gap: 8px; }
+  .tile { min-height: 80px; padding: 6px; }
+  .tile-ico { font-size: 32px; }
+  .tile-name { font-size: 15px; }
+  .colors { min-height: 64px; }
+  .colors-label { margin-bottom: 4px; font-size: 15px; }
+  .swatches { gap: 8px; }
+  .swatch { width: 48px; height: 48px; font-size: 20px; }
+  .tip { font-size: 17px; }
+  .side-btn { min-width: 64px; min-height: 64px; }
+  .side-btn .thumb { width: 48px; height: 48px; font-size: 24px; }
+  .side-label { font-size: 14px; }
+  .shutter { width: 80px; height: 80px; }
+  .shutter-core { width: 62px; height: 62px; font-size: 28px; }
+  .chip { min-height: 48px; font-size: 17px; padding: 0 14px; }
+  .ask { margin: 8px 0 12px; }
+  .big { min-height: 60px; font-size: 21px; }
+  .text-btn { margin-top: 10px; }
 }
 
 /* ───────────── phone ───────────── */
