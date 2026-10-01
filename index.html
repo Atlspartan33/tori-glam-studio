@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tori's Glam Studio</title>
+  <meta name="theme-color" content="#17121D">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-screen="start">
+
+  <!-- ───────── start: who's in the chair? ───────── -->
+  <section id="start" class="screen start" aria-labelledby="startTitle">
+    <div class="start-art" aria-hidden="true">
+      <span class="float f1">💄</span><span class="float f2">👑</span><span class="float f3">✨</span>
+      <span class="float f4">🐶</span><span class="float f5">⭐</span>
+    </div>
+    <div class="start-body">
+      <p class="kicker">Tori's</p>
+      <h1 id="startTitle" class="title">Glam<br>Studio</h1>
+      <p class="ask">Who's in the makeup chair?</p>
+      <div class="start-actions">
+        <button id="meBtn" class="big primary" type="button"><span class="ico" aria-hidden="true">🪞</span> Me!</button>
+        <button id="themBtn" class="big secondary" type="button"><span class="ico" aria-hidden="true">📸</span> Someone else</button>
+      </div>
+      <button id="startGallery" class="text-btn" type="button">🖼️ See my pictures</button>
+    </div>
+  </section>
+
+  <!-- ───────── studio ───────── -->
+  <section id="studio" class="screen studio" aria-label="Makeup studio">
+    <div class="stage" id="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="canvas" aria-label="Camera with makeup"></canvas>
+
+      <div class="topbar">
+        <button id="homeBtn" class="chip" type="button" aria-label="Back to start"><span aria-hidden="true">‹</span> Home</button>
+        <div class="brand" aria-hidden="true">TORI'S GLAM STUDIO</div>
+        <button id="flipBtn" class="chip" type="button" aria-label="Switch camera"><span aria-hidden="true">🔄</span> Flip</button>
+      </div>
+
+      <div id="hint" class="hint" role="status" hidden></div>
+      <div id="count" class="count" aria-live="assertive" hidden></div>
+      <div id="flash" class="flash" hidden></div>
+
+      <div id="loading" class="overlay" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="loadingText">Opening the studio…</p>
+      </div>
+      <div id="error" class="overlay" role="alert" hidden>
+        <div class="err-ico" aria-hidden="true">🙈</div>
+        <p id="errTitle" class="err-title">Uh-oh!</p>
+        <p id="errText" class="err-text"></p>
+        <button id="retryBtn" class="big primary" type="button">Try again</button>
+      </div>
+    </div>
+
+    <footer class="dock">
+      <div class="tabs" role="tablist" aria-label="Drawers">
+        <button class="tab" role="tab" data-tab="makeup" type="button"><span aria-hidden="true">💄</span> Makeup</button>
+        <button class="tab" role="tab" data-tab="costumes" type="button"><span aria-hidden="true">👑</span> Costumes</button>
+      </div>
+      <div id="tray" class="tray" role="tabpanel"></div>
+      <div id="colors" class="colors">
+        <p id="colorsLabel" class="colors-label"></p>
+        <div id="swatches" class="swatches"></div>
+      </div>
+      <div class="shutter-row">
+        <button id="galleryBtn" class="side-btn" type="button" aria-label="My pictures">
+          <span class="thumb" id="thumb"><span aria-hidden="true">🖼️</span></span><span class="side-label">Pictures</span>
+        </button>
+        <button id="shutter" class="shutter" type="button" aria-label="Take a picture"><span class="shutter-core" aria-hidden="true">📸</span></button>
+        <button id="clearBtn" class="side-btn" type="button" aria-label="Wipe off everything">
+          <span class="thumb" aria-hidden="true">🧽</span><span class="side-label">Wipe off</span>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ───────── gallery ───────── -->
+  <section id="gallery" class="sheet" aria-label="My pictures" hidden>
+    <header class="sheet-head">
+      <h2>My Pictures</h2>
+      <button id="galleryClose" class="chip" type="button">Done</button>
+    </header>
+    <div id="grid" class="grid"></div>
+    <p id="empty" class="empty" hidden>No pictures yet!<br>Tap the big 📸 button to take one.</p>
+  </section>
+
+  <section id="viewer" class="sheet viewer" aria-label="Picture" hidden>
+    <img id="viewerImg" alt="A picture from the studio">
+    <div class="viewer-actions">
+      <button id="viewerBack" class="big secondary" type="button">‹ Back</button>
+      <button id="shareBtn" class="big primary" type="button"><span aria-hidden="true">💌</span> Share</button>
+      <button id="trashBtn" class="big secondary" type="button" aria-label="Throw away"><span aria-hidden="true">🗑️</span></button>
+    </div>
+  </section>
+
+  <div id="confirm" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmText" hidden>
+    <div class="modal-card">
+      <p id="confirmText">Throw this picture away?</p>
+      <div class="modal-actions">
+        <button id="keepBtn" class="big primary" type="button">Keep it</button>
+        <button id="tossBtn" class="big secondary" type="button">Throw away</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
